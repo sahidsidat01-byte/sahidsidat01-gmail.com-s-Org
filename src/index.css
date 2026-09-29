@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: #1b1c1c;
+    background-color: #fcf9f8;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, .font-serif, .font-headline {
+    font-family: var(--font-serif);
+  }
+}
+
+/* Custom scrollbar and utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Luxury glow shadow */
+.shadow-luxury {
+  box-shadow: 0 4px 24px -2px rgba(13, 35, 76, 0.06), 0 2px 8px -1px rgba(232, 117, 36, 0.04);
+}
+.shadow-luxury-lg {
+  box-shadow: 0 16px 36px -6px rgba(13, 35, 76, 0.12), 0 6px 16px -2px rgba(232, 117, 36, 0.06);
+}

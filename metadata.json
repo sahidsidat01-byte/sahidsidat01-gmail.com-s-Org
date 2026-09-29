@@ -1,0 +1,6 @@
+{
+  "name": "Rose Garden Luxury Heritage Hotel & Restaurant",
+  "description": "Experience timeless luxury, regal suites, and Michelin-recommended fine dining at Rose Garden Hotel & Restaurant in Jaipur, Rajasthan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
