@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { PageType, BookingState, Room } from '../types';
 import { ROOMS_DATA } from '../data/hotelData';
+import { createBooking } from '../services/supabaseService';
 
 interface StayBookingPageProps {
   onNavigate: (page: PageType) => void;
   booking: BookingState;
   onUpdateBooking: (updated: Partial<BookingState>) => void;
-  onCompleteBooking: () => void;
+  onCompleteBooking: (reservationCode: string) => void;
+  currentUserId?: string;
   currency: string;
 }
 
@@ -15,12 +17,14 @@ export const StayBookingPage: React.FC<StayBookingPageProps> = ({
   booking,
   onUpdateBooking,
   onCompleteBooking,
+  currentUserId,
   currency,
 }) => {
   const [promoCodeInput, setPromoCodeInput] = useState(booking.promoCode || 'ROSE20');
   const [promoApplied, setPromoApplied] = useState(true);
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
   const [isRoomChangeOpen, setIsRoomChangeOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Recalculate amounts
   const baseTotal = booking.baseRate * booking.nights;
@@ -61,10 +65,18 @@ export const StayBookingPage: React.FC<StayBookingPageProps> = ({
     onUpdateBooking({ specialRequests: updated });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    const generatedCode = `#RG-${Math.floor(100000 + Math.random() * 900000)}`;
+    const fullBookingState = { ...booking, total: finalTotal };
     onUpdateBooking({ total: finalTotal });
-    onCompleteBooking();
+
+    // Call Supabase service
+    await createBooking(fullBookingState, generatedCode, currentUserId);
+    setIsSubmitting(false);
+    onCompleteBooking(generatedCode);
   };
 
   return (

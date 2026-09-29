@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageType } from '../types';
 import { INITIAL_BOOKINGS } from '../data/hotelData';
+import {
+  fetchAllBookings,
+  updateBookingStatus,
+  createBooking,
+  fetchRoomOrders,
+} from '../services/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface AdminPageProps {
   onNavigate: (page: PageType) => void;
+  onOpenSupabaseSetup?: () => void;
   currency: string;
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, currency }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({
+  onNavigate,
+  onOpenSupabaseSetup,
+  currency,
+}) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'rooms' | 'kitchen' | 'crm' | 'reports'>('overview');
   const [bookingsList, setBookingsList] = useState(INITIAL_BOOKINGS);
   const [searchGuest, setSearchGuest] = useState('');
@@ -15,6 +27,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, currency }) =>
   const [walkinGuestName, setWalkinGuestName] = useState('');
   const [walkinSuite, setWalkinSuite] = useState('Executive Garden Deluxe');
   const [tariffPeakMultiplier, setTariffPeakMultiplier] = useState(1.0);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+
+  // Sync bookings on load
+  const refreshBookings = async () => {
+    setIsLoadingBookings(true);
+    const data = await fetchAllBookings();
+    if (data && data.length > 0) {
+      setBookingsList(data);
+    }
+    setIsLoadingBookings(false);
+  };
+
+  useEffect(() => {
+    refreshBookings();
+  }, []);
+
   const [kitchenOrders, setKitchenOrders] = useState([
     {
       id: 'k-1',
@@ -36,37 +64,52 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, currency }) =>
     },
   ]);
 
-  const toggleCheckIn = (id: string) => {
+  const toggleCheckIn = async (id: string) => {
+    const current = bookingsList.find((b) => b.id === id);
+    if (!current) return;
+    const newStatus = current.status === 'Checked-in' ? 'Checked-out' : 'Checked-in';
+
+    // Local optimistic update
     setBookingsList((prev) =>
-      prev.map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              status: b.status === 'Checked-in' ? 'Checked-out' : 'Checked-in',
-            }
-          : b
-      )
+      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
     );
+
+    await updateBookingStatus(id, newStatus);
   };
 
-  const handleAddWalkin = (e: React.FormEvent) => {
+  const handleAddWalkin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!walkinGuestName.trim()) return;
-    const newB = {
-      id: `RG-${Math.floor(10000 + Math.random() * 90000)}`,
-      guestName: walkinGuestName,
-      initials: walkinGuestName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(),
-      suite: walkinSuite,
-      dates: 'Today – Oct 16 (2 Nights)',
-      amount: walkinSuite.includes('Presidential') ? 44000 : 18400,
-      status: 'Checked-in',
+    const code = `#RG-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    const newBookingData = {
+      roomId: 'walkin-suite',
+      roomName: walkinSuite,
+      roomImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDfRN62bINs6cuFTeSYsWASoIVWRh0NIfwi0gmmbQkcZrXK7a4w3OjPm3vxef7W6Q0hHo5ROjYsKfox1h2DawdufpRNmAYgi3NwDsA-a8-WZ2ay7aPYWlkgXzh53sWj7vdluTuSa2P6gA3h2nSKsp_pGPlnMigz7KvK9OXxGnu72o3PXfcwuhjbu1oqxpWzLn2uZv9e95PSdqchzSijKvXE-FO8oUsmRZU7v_q5Bk1ICsBirM5mPfhz',
+      checkIn: 'Today',
+      checkOut: 'Oct 16',
+      nights: 2,
+      adults: 2,
+      children: 0,
+      baseRate: walkinSuite.includes('Presidential') ? 22000 : 9200,
+      taxes: walkinSuite.includes('Presidential') ? 7920 : 3312,
+      resortFee: 1200,
+      promoCode: '',
+      discount: 0,
+      total: walkinSuite.includes('Presidential') ? 53120 : 22912,
+      guestFirstName: walkinGuestName.split(' ')[0] || walkinGuestName,
+      guestLastName: walkinGuestName.split(' ').slice(1).join(' ') || 'Guest',
+      guestEmail: `${walkinGuestName.toLowerCase().replace(/\s+/g, '.')}@patron.com`,
+      guestPhone: '+91 98200 00000',
+      arrivalTime: 'Immediate Walk-in',
+      specialRequests: ['Express Keycard Assigned'],
+      customNotes: 'Registered directly at Reception portico.',
+      paymentMethod: 'arrival' as any,
     };
-    setBookingsList([newB, ...bookingsList]);
+
+    await createBooking(newBookingData, code);
+    await refreshBookings();
+
     setWalkinGuestName('');
     setIsWalkinModalOpen(false);
   };
@@ -279,11 +322,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, currency }) =>
               </div>
             </button>
             <button
-              onClick={() => alert('Daily Flash Report dispatched to executive distribution list!')}
+              onClick={() => onOpenSupabaseSetup && onOpenSupabaseSetup()}
               className="p-3.5 bg-white hover:bg-[#f6f3f2] text-[#1b1c1c] border border-[#dec1b2]/40 rounded-2xl shadow-xs active:scale-95 transition-all text-left flex items-center gap-2.5"
             >
-              <span className="material-symbols-outlined text-[22px] text-[#e87524]">summarize</span>
-              <span className="text-xs font-bold">Daily Flash</span>
+              <span className="material-symbols-outlined text-[22px] text-emerald-700">database</span>
+              <div className="min-w-0">
+                <span className="text-xs font-bold block truncate">Supabase DB</span>
+                <span className="text-[10px] text-[#8a7265] block truncate">
+                  {isSupabaseConfigured() ? 'Live Connected' : 'Local Fallback'}
+                </span>
+              </div>
             </button>
           </div>
         </section>

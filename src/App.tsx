@@ -13,6 +13,8 @@ import { SearchModal } from './components/SearchModal';
 import { RoomDetailModal } from './components/RoomDetailModal';
 import { LightboxModal } from './components/LightboxModal';
 import { BookingSuccessModal } from './components/BookingSuccessModal';
+import { SupabaseSetupModal } from './components/SupabaseSetupModal';
+import { AuthModal } from './components/AuthModal';
 
 import { HomePage } from './pages/HomePage';
 import { RoomsPage } from './pages/RoomsPage';
@@ -25,11 +27,16 @@ import { ContactPage } from './pages/ContactPage';
 import { AdminPage } from './pages/AdminPage';
 
 import { ROOMS_DATA, GALLERY_PHOTOS } from './data/hotelData';
+import { isSupabaseConfigured } from './lib/supabase';
+import { UserProfile, getCurrentUserProfile } from './services/supabaseService';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSupabaseSetupOpen, setIsSupabaseSetupOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currency, setCurrency] = useState<'INR' | 'USD' | 'EUR' | 'GBP'>('INR');
 
   // Room Detail Modal state
@@ -43,6 +50,13 @@ export default function App() {
   // Booking Success Modal state
   const [isBookingSuccessOpen, setIsBookingSuccessOpen] = useState(false);
   const [activeReservationCode, setActiveReservationCode] = useState('#RG-883492');
+
+  // Load current user profile if available
+  useEffect(() => {
+    getCurrentUserProfile().then((u) => {
+      if (u) setCurrentUser(u);
+    });
+  }, []);
 
   // Global Dining Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([
@@ -62,7 +76,7 @@ export default function App() {
     },
   ]);
 
-  // Global Booking State (Default to Executive Garden Deluxe as seen in the Stitch design)
+  // Global Booking State
   const defaultRoom = ROOMS_DATA[1]; // Executive Garden Deluxe
   const [bookingState, setBookingState] = useState<BookingState>({
     roomId: defaultRoom.id,
@@ -73,12 +87,12 @@ export default function App() {
     nights: 3,
     adults: 2,
     children: 0,
-    baseRate: defaultRoom.price, // 9,200
-    taxes: Math.round(defaultRoom.price * 3 * 0.18), // 4,968
+    baseRate: defaultRoom.price,
+    taxes: Math.round(defaultRoom.price * 3 * 0.18),
     resortFee: 1200,
     promoCode: 'ROSE20',
     discount: 2000,
-    total: 31768, // (9200 * 3) + 4968 + 1200 - 2000 = 31,768
+    total: 31768,
     guestFirstName: 'Aarav',
     guestLastName: 'Kapoor',
     guestEmail: 'aarav.kapoor@outlook.com',
@@ -153,9 +167,8 @@ export default function App() {
     setCartItems([]);
   };
 
-  const handleCompleteBooking = () => {
-    const generatedCode = `#RG-${Math.floor(100000 + Math.random() * 900000)}`;
-    setActiveReservationCode(generatedCode);
+  const handleCompleteBooking = (reservationCode: string) => {
+    setActiveReservationCode(reservationCode);
     setIsBookingSuccessOpen(true);
   };
 
@@ -164,6 +177,8 @@ export default function App() {
     const nextIdx = (order.indexOf(currency) + 1) % order.length;
     setCurrency(order[nextIdx]);
   };
+
+  const isSupabaseLive = isSupabaseConfigured();
 
   return (
     <div className="min-h-screen bg-[#fcf9f8] text-[#1b1c1c] flex flex-col font-sans selection:bg-[#ffdbc9] selection:text-[#321200]">
@@ -174,6 +189,10 @@ export default function App() {
         onNavigate={handleNavigate}
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenSupabase={() => setIsSupabaseSetupOpen(true)}
+        isSupabaseLive={isSupabaseLive}
+        currentUser={currentUser}
         cartItems={cartItems}
         currency={currency}
         onToggleCurrency={handleToggleCurrency}
@@ -217,6 +236,7 @@ export default function App() {
             booking={bookingState}
             onUpdateBooking={(updated) => setBookingState((prev) => ({ ...prev, ...updated }))}
             onCompleteBooking={handleCompleteBooking}
+            currentUserId={currentUser?.id}
             currency={currency}
           />
         )}
@@ -247,14 +267,18 @@ export default function App() {
         )}
 
         {currentPage === 'admin' && (
-          <AdminPage onNavigate={handleNavigate} currency={currency} />
+          <AdminPage
+            onNavigate={handleNavigate}
+            onOpenSupabaseSetup={() => setIsSupabaseSetupOpen(true)}
+            currency={currency}
+          />
         )}
       </main>
 
       {/* Comprehensive Footer */}
       <Footer onNavigate={handleNavigate} />
 
-      {/* Mobile Bottom Navigation Bar (Matching Stitch design mobile tabs) */}
+      {/* Mobile Bottom Navigation Bar */}
       <MobileNav
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -267,6 +291,8 @@ export default function App() {
         onClose={() => setIsDrawerOpen(false)}
         currentPage={currentPage}
         onNavigate={handleNavigate}
+        onOpenSupabase={() => setIsSupabaseSetupOpen(true)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
         currency={currency}
         onSetCurrency={(c) => setCurrency(c as any)}
       />
@@ -310,6 +336,24 @@ export default function App() {
         }}
         booking={bookingState}
         reservationCode={activeReservationCode}
+      />
+
+      {/* Supabase Connection & Schema Setup Modal */}
+      <SupabaseSetupModal
+        isOpen={isSupabaseSetupOpen}
+        onClose={() => setIsSupabaseSetupOpen(false)}
+      />
+
+      {/* Patron Auth & Profile Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onUserChange={setCurrentUser}
+        onOpenSupabaseSetup={() => {
+          setIsAuthModalOpen(false);
+          setIsSupabaseSetupOpen(true);
+        }}
       />
 
     </div>

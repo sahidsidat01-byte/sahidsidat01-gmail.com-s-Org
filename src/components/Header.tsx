@@ -6,6 +6,10 @@ interface HeaderProps {
   onNavigate: (page: PageType) => void;
   onOpenDrawer: () => void;
   onOpenSearch: () => void;
+  onOpenAuth: () => void;
+  onOpenSupabase: () => void;
+  isSupabaseLive: boolean;
+  currentUser: any;
   cartItems: CartItem[];
   currency: string;
   onToggleCurrency: () => void;
@@ -16,6 +20,10 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenDrawer,
   onOpenSearch,
+  onOpenAuth,
+  onOpenSupabase,
+  isSupabaseLive,
+  currentUser,
   cartItems,
   currency,
   onToggleCurrency,
@@ -133,8 +141,23 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </nav>
 
-        {/* Right: Actions (Search, Currency, Cart, Book Room CTA, Admin/Profile) */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right: Actions (Supabase status, Search, Currency, Cart, Book Room CTA, Auth) */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Supabase Status Trigger */}
+          <button
+            onClick={onOpenSupabase}
+            title={isSupabaseLive ? 'Supabase Database Connected' : 'Supabase Setup & Schema'}
+            type="button"
+            className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 ${
+              isSupabaseLive
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                : 'bg-[#ffdbcb]/30 border-[#dec1b2] text-[#763300] hover:bg-[#ffdbcb]'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${isSupabaseLive ? 'bg-emerald-600 animate-pulse' : 'bg-[#e87524]'}`} />
+            <span className="hidden md:inline">Supabase</span>
+          </button>
+
           {/* Currency Switcher */}
           <button
             onClick={onToggleCurrency}
@@ -150,9 +173,9 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Search"
             onClick={onOpenSearch}
             type="button"
-            className="w-10 h-10 flex items-center justify-center text-[#574237] hover:text-[#1b1c1c] rounded-full hover:bg-[#f0eded] active:scale-95 transition-transform"
+            className="w-9 h-9 flex items-center justify-center text-[#574237] hover:text-[#1b1c1c] rounded-full hover:bg-[#f0eded] active:scale-95 transition-transform"
           >
-            <span className="material-symbols-outlined text-[22px]">search</span>
+            <span className="material-symbols-outlined text-[20px]">search</span>
           </button>
 
           {/* Dining Cart Pill (if items in cart) */}
@@ -171,26 +194,32 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => onNavigate('book')}
             type="button"
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#e87524] hover:bg-[#9a4600] text-white text-xs md:text-sm font-semibold tracking-wide shadow-sm hover:shadow-md active:scale-95 transition-all"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#e87524] hover:bg-[#9a4600] text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow-md active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-            <span>Book a Stay</span>
+            <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+            <span>Book Stay</span>
           </button>
 
-          {/* Guest Profile / Executive Admin Avatar */}
+          {/* Guest Profile / Auth Trigger */}
           <button
-            aria-label="Executive Portal"
-            onClick={() => onNavigate('admin')}
-            title="Executive Portal & Guest Profile"
+            aria-label="Patron Profile & Auth"
+            onClick={onOpenAuth}
+            title={currentUser ? `Signed in as ${currentUser.fullName}` : 'Sign In / Register'}
             type="button"
-            className="relative w-9 h-9 rounded-full ring-2 ring-[#e87524]/30 hover:ring-[#e87524] overflow-hidden active:scale-95 transition-all shadow-sm"
+            className="relative w-9 h-9 rounded-full ring-2 ring-[#e87524]/30 hover:ring-[#e87524] overflow-hidden active:scale-95 transition-all shadow-sm flex items-center justify-center bg-[#f6f3f2]"
           >
-            <img
-              alt="General Manager"
-              className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSoL4pXP5Jw8-y8Wa2VUPTB3MQ_VRnaDG1xPt9uYOhcwADx-WcOlMxxVQmCCJjEBqZTc2kJoTKo05GLfglAIjxTmmgo32P0IxmzuaGjDjgswhtMrSC_ohAJ_InGXoWQn_Wsz-_DBvjKRRm4_FwGOnOV8KMDf8IQInfp9njAs2kd-_Am-bu9GPWpz_bX2-UBkdqPG23EPE7KXx_7ttIMZhrt7FZa4FnNx7WdDbgRfXeyeF3fpuDWoLR"
-            />
-            {currentPage === 'admin' && (
+            {currentUser ? (
+              <span className="font-serif text-xs font-bold text-[#9a4600]">
+                {currentUser.fullName ? currentUser.fullName.slice(0, 2).toUpperCase() : 'GM'}
+              </span>
+            ) : (
+              <img
+                alt="Profile"
+                className="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSoL4pXP5Jw8-y8Wa2VUPTB3MQ_VRnaDG1xPt9uYOhcwADx-WcOlMxxVQmCCJjEBqZTc2kJoTKo05GLfglAIjxTmmgo32P0IxmzuaGjDjgswhtMrSC_ohAJ_InGXoWQn_Wsz-_DBvjKRRm4_FwGOnOV8KMDf8IQInfp9njAs2kd-_Am-bu9GPWpz_bX2-UBkdqPG23EPE7KXx_7ttIMZhrt7FZa4FnNx7WdDbgRfXeyeF3fpuDWoLR"
+              />
+            )}
+            {currentUser && (
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white" />
             )}
           </button>

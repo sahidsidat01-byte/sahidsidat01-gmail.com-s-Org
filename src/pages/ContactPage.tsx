@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PageType } from '../types';
+import { createInquiry } from '../services/supabaseService';
 
 interface ContactPageProps {
   onNavigate: (page: PageType) => void;
@@ -24,16 +25,24 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  const handleSubmitInquiry = (e: React.FormEvent) => {
+  const handleSubmitInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmittedFeedback(
-        `Thank you, ${fullName}. Our Chief Concierge has received your request regarding "${inquiryType}" and will respond within two hours.`
-      );
-      setTimeout(() => setSubmittedFeedback(null), 6000);
-    }, 800);
+
+    await createInquiry({
+      inquiryType,
+      fullName,
+      email,
+      phone,
+      subject,
+      message,
+    });
+
+    setIsSubmitting(false);
+    setSubmittedFeedback(
+      `Thank you, ${fullName}. Your request regarding "${inquiryType}" has been registered in our concierge registry and our team will follow up within two hours.`
+    );
+    setTimeout(() => setSubmittedFeedback(null), 6000);
   };
 
   return (

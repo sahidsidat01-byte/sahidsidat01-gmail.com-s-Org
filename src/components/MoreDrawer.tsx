@@ -6,6 +6,8 @@ interface MoreDrawerProps {
   onClose: () => void;
   currentPage: PageType;
   onNavigate: (page: PageType) => void;
+  onOpenSupabase: () => void;
+  onOpenAuth: () => void;
   currency: string;
   onSetCurrency: (curr: string) => void;
 }
@@ -15,6 +17,8 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({
   onClose,
   currentPage,
   onNavigate,
+  onOpenSupabase,
+  onOpenAuth,
   currency,
   onSetCurrency,
 }) => {
@@ -179,7 +183,35 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({
               <span>Contact Us & Concierge Hub</span>
             </button>
 
-            <div className="pt-2 border-t border-[#f0eded]">
+            <div className="pt-2 border-t border-[#f0eded] space-y-1">
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenSupabase();
+                }}
+                className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left text-sm font-semibold text-[#0D234C] hover:bg-[#ffdbcb]/30 transition-all"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#25D366]">cloud_sync</span>
+                <div className="flex-1">
+                  <span>Supabase Backend & Schema</span>
+                  <span className="block text-[10px] text-[#8a7265] font-normal">PostgreSQL tables, RLS & API keys</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAuth();
+                }}
+                className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left text-sm font-semibold text-[#1b1c1c] hover:bg-[#f6f3f2] transition-all"
+              >
+                <span className="material-symbols-outlined text-[20px] text-[#9a4600]">account_circle</span>
+                <div className="flex-1">
+                  <span>Patron Account & Auth</span>
+                  <span className="block text-[10px] text-[#8a7265] font-normal">Sign In, Register or Profile</span>
+                </div>
+              </button>
+
               <button
                 onClick={() => handleNav('admin')}
                 className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left text-sm font-semibold transition-all ${

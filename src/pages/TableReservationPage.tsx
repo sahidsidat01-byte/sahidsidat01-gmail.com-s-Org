@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PageType, TableReservation } from '../types';
+import { createTableReservation, createRoomOrder } from '../services/supabaseService';
 
 interface TableReservationPageProps {
   onNavigate: (page: PageType) => void;
@@ -27,6 +28,7 @@ export const TableReservationPage: React.FC<TableReservationPageProps> = ({
     'Fresh rose petal table runner and please prepare a celebratory dessert plate.'
   );
   const [showReservationToast, setShowReservationToast] = useState(false);
+  const [resCode, setResCode] = useState('TBL-504');
 
   // Delivery Tab states
   const [deliveryMode, setDeliveryMode] = useState<'suite' | 'takeaway' | 'local'>('suite');
@@ -37,6 +39,7 @@ export const TableReservationPage: React.FC<TableReservationPageProps> = ({
     naan: 2,
   });
   const [showOrderToast, setShowOrderToast] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const updateOrderQty = (itemKey: string, delta: number) => {
     setOrderItems((prev) => ({
@@ -57,13 +60,46 @@ export const TableReservationPage: React.FC<TableReservationPageProps> = ({
   const totalOrderCount =
     (orderItems.dal || 0) + (orderItems.biryani || 0) + (orderItems.naan || 0);
 
-  const handleConfirmReservation = (e: React.FormEvent) => {
+  const handleConfirmReservation = async (e: React.FormEvent) => {
     e.preventDefault();
+    const code = `TBL-${Math.floor(100 + Math.random() * 900)}`;
+    setResCode(code);
+
+    await createTableReservation(
+      {
+        date: dateOption,
+        timeSlot: selectedSlot,
+        guestsCount,
+        ambience: selectedAmbience,
+        guestName,
+        phone,
+        email,
+        occasion,
+        specialRequests,
+      },
+      code
+    );
+
     setShowReservationToast(true);
     setTimeout(() => setShowReservationToast(false), 5000);
   };
 
-  const handleOrderCheckout = () => {
+  const handleOrderCheckout = async () => {
+    setIsSubmittingOrder(true);
+    const orderCode = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    await createRoomOrder(
+      {
+        roomOrTable: deliveryMode === 'suite' ? roomSuiteNum : 'Takeaway Lobby',
+        deliveryMode,
+        items: orderItems,
+        totalAmount: calculateOrderTotal(),
+        note: `Placed via Rosewood Web App for ${roomSuiteNum}`,
+      },
+      orderCode
+    );
+
+    setIsSubmittingOrder(false);
     setShowOrderToast(true);
     setTimeout(() => setShowOrderToast(false), 4500);
   };
